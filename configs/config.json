@@ -1,0 +1,31 @@
+{
+  "daemon": {
+    "log_level": "info",
+    "log_format": "json",
+    "user": "",
+    "group": "",
+    "shutdown_timeout": "10s"
+  },
+  "storage": {
+    "db_path": "/var/lib/arcsent/arcsent.db"
+  },
+  "signatures": {
+    "enabled": false,
+    "update_interval": "24h",
+    "sources": [
+      "mitre_attack",
+      "nvd",
+      "osv",
+      "cisa_kev",
+      "exploit_db"
+    ],
+    "cache_dir": "/var/lib/arcsent/signatures",
+    "airgap_import_path": ""
+  },
+  "web_ui": {
+    "enabled": false,
+    "bind_addr": "127.0.0.1:8787",
+    "read_only": true,
+    "auth_token": ""
+  }
+}

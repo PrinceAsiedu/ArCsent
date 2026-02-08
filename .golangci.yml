@@ -1,0 +1,24 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - revive
+    - errcheck
+    - gosec
+    - ineffassign
+    - misspell
+    - unconvert
+
+linters-settings:
+  gosec:
+    severity: "medium"
+    confidence: "medium"
+
+issues:
+  exclude-rules:
+    - linters:
+        - gosec
+      text: "G304" # allow reading config file path from user input with validation
