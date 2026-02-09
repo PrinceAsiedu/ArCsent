@@ -11,7 +11,7 @@ Send the token in `Authorization` header or `?token=` query parameter.
 2. `GET /status`  
    Returns `{"status":"running"}`.
 3. `GET /scanners`  
-   Returns available plugins and scheduled jobs.
+   Returns available plugins, scheduled jobs, and job state.
 4. `POST /scanners/trigger/{plugin}`  
    Runs a plugin once and returns the result.
 5. `GET /results/latest`  

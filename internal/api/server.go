@@ -119,9 +119,21 @@ func (s *Server) handleStatus(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) handleScanners(w http.ResponseWriter, _ *http.Request) {
+	states := map[string]interface{}{}
+	for _, job := range s.sched.ListJobs() {
+		state, ok := s.sched.JobState(job.Name)
+		if ok {
+			next, _ := s.sched.NextRun(job.Name)
+			states[job.Name] = map[string]interface{}{
+				"state":    state,
+				"next_run": next,
+			}
+		}
+	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"plugins": s.mgr.List(),
 		"jobs":    s.sched.ListJobs(),
+		"states":  states,
 	})
 }
 

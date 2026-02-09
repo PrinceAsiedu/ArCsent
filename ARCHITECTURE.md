@@ -29,3 +29,6 @@ ArCsent is a local-only security monitoring daemon written in Go. It is designed
 2. Token auth for API and UI.
 3. Privilege drop after startup.
 4. No external telemetry by default.
+
+**Scheduler State**
+- Job state (last run, last status, failures) is persisted locally to avoid duplicate runs after restart.

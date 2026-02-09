@@ -67,6 +67,9 @@ type ScannerConfig struct {
 	Enabled      bool                   `json:"enabled"`
 	Schedule     string                 `json:"schedule"`
 	Timeout      string                 `json:"timeout"`
+	MaxRetries   int                    `json:"max_retries"`
+	RetryBackoff string                 `json:"retry_backoff"`
+	RetryMax     string                 `json:"retry_max"`
 	AllowOverlap bool                   `json:"allow_overlap"`
 	RunOnStart   bool                   `json:"run_on_start"`
 	Config       map[string]interface{} `json:"config"`
@@ -231,6 +234,16 @@ func (c Config) Validate() error {
 				errs = append(errs, fmt.Sprintf("scanners[%d].timeout must be a valid duration", i))
 			}
 		}
+		if sc.RetryBackoff != "" {
+			if _, err := time.ParseDuration(sc.RetryBackoff); err != nil {
+				errs = append(errs, fmt.Sprintf("scanners[%d].retry_backoff must be a valid duration", i))
+			}
+		}
+		if sc.RetryMax != "" {
+			if _, err := time.ParseDuration(sc.RetryMax); err != nil {
+				errs = append(errs, fmt.Sprintf("scanners[%d].retry_max must be a valid duration", i))
+			}
+		}
 	}
 
 	if len(errs) > 0 {
@@ -267,6 +280,28 @@ func (s ScannerConfig) TimeoutDuration() time.Duration {
 		return 0
 	}
 	parsed, err := time.ParseDuration(s.Timeout)
+	if err != nil {
+		return 0
+	}
+	return parsed
+}
+
+func (s ScannerConfig) RetryBackoffDuration() time.Duration {
+	if s.RetryBackoff == "" {
+		return 0
+	}
+	parsed, err := time.ParseDuration(s.RetryBackoff)
+	if err != nil {
+		return 0
+	}
+	return parsed
+}
+
+func (s ScannerConfig) RetryMaxDuration() time.Duration {
+	if s.RetryMax == "" {
+		return 0
+	}
+	parsed, err := time.ParseDuration(s.RetryMax)
 	if err != nil {
 		return 0
 	}

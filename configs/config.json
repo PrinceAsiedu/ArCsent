@@ -42,6 +42,9 @@
       "enabled": false,
       "schedule": "10m",
       "timeout": "10s",
+      "max_retries": 0,
+      "retry_backoff": "2s",
+      "retry_max": "30s",
       "allow_overlap": false,
       "run_on_start": true,
       "config": {
@@ -56,6 +59,9 @@
       "enabled": false,
       "schedule": "6h",
       "timeout": "2m",
+      "max_retries": 0,
+      "retry_backoff": "2s",
+      "retry_max": "30s",
       "allow_overlap": false,
       "run_on_start": false,
       "config": {
@@ -68,6 +74,9 @@
       "enabled": false,
       "schedule": "5m",
       "timeout": "20s",
+      "max_retries": 0,
+      "retry_backoff": "2s",
+      "retry_max": "30s",
       "allow_overlap": false,
       "run_on_start": false,
       "config": {
@@ -80,6 +89,9 @@
       "enabled": false,
       "schedule": "10m",
       "timeout": "10s",
+      "max_retries": 0,
+      "retry_backoff": "2s",
+      "retry_max": "30s",
       "allow_overlap": false,
       "run_on_start": false,
       "config": {
@@ -93,6 +105,9 @@
       "enabled": false,
       "schedule": "10m",
       "timeout": "10s",
+      "max_retries": 0,
+      "retry_backoff": "2s",
+      "retry_max": "30s",
       "allow_overlap": false,
       "run_on_start": false,
       "config": {

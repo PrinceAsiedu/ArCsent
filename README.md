@@ -25,6 +25,7 @@ ArCsent is a **local-only, privacy-first** security monitoring daemon written in
 ## Features
 
 - Scheduler with overlap protection and timeouts.
+- Cron schedule support, retry/backoff, and persistent job state.
 - System plugins: disk usage, file integrity, process monitoring, auth log monitor, network listeners.
 - Baseline and anomaly detection.
 - Alerting (log channel).
@@ -80,7 +81,9 @@ Config is JSON and validated at startup.
 - `api.enabled` defaults to `false`; when enabled, `api.auth_token` is required.
 - `daemon.user` and `daemon.group` may be numeric IDs or names when running as root.
 - `daemon.drop_privileges` defaults to `false` (run as root). Set `true` to drop to `daemon.user`/`daemon.group`.
-- Scheduler accepts `@every <duration>` or raw duration strings (cron support later).
+- Scheduler accepts `@every <duration>`, raw duration, or 5-field cron expressions.
+- Scheduler accepts duration or cron expressions (5-field).
+- Retry/backoff: `max_retries`, `retry_backoff`, `retry_max`.
 - Storage path expects a BadgerDB directory (default: `/var/lib/arcsent/badger`).
 
 **Scanners**

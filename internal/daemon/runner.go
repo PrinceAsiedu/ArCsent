@@ -92,6 +92,7 @@ func (r *Runner) Run(ctx context.Context) error {
 	baselineMgr := detection.NewManager(store)
 	resultCache := state.NewResultCache(50)
 	sched := scheduler.New(r.logger, manager)
+	sched.WithStateStore(store)
 	sched.SetOnResult(func(result scanner.Result) {
 		resultCache.Add(result)
 		for key, raw := range result.Metadata {
@@ -121,6 +122,9 @@ func (r *Runner) Run(ctx context.Context) error {
 			Plugin:       sc.Plugin,
 			Schedule:     sc.Schedule,
 			Timeout:      sc.TimeoutDuration(),
+			MaxRetries:   sc.MaxRetries,
+			RetryBackoff: sc.RetryBackoffDuration(),
+			RetryMax:     sc.RetryMaxDuration(),
 			AllowOverlap: sc.AllowOverlap,
 			RunOnStart:   sc.RunOnStart,
 		}); err != nil {

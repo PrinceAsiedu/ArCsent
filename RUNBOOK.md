@@ -14,6 +14,10 @@ This runbook is for local deployments only.
 **Trigger a Scan**
 1. `curl -X POST -H "Authorization: <token>" http://127.0.0.1:8788/scanners/trigger/system.disk_usage`
 
+**Scheduling**
+- Use duration schedules (`10m`) or cron expressions (`*/5 * * * *`).
+- Configure retries with `max_retries`, `retry_backoff`, `retry_max`.
+
 **Rotate Tokens**
 1. Update `api.auth_token` and `web_ui.auth_token` in config.
 2. Restart the daemon.
