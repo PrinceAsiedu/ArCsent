@@ -6,6 +6,7 @@ After=network.target
 Type=simple
 User=arcsent
 Group=arcsent
+EnvironmentFile=-/etc/arcsent/arcsent.env
 ExecStart=/usr/local/bin/arcsent -config /etc/arcsent/config.json
 Restart=on-failure
 RestartSec=5s

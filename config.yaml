@@ -1,0 +1,26 @@
+daemon:
+  log_level: debug
+  log_format: text
+
+storage:
+  db_path: /tmp/arcsent-debug-db
+  retention_days: 1
+
+web_ui:
+  enabled: true
+  bind_addr: 127.0.0.1:8787
+  auth_token: "debug-token"
+  read_only: false
+
+api:
+  enabled: true
+  bind_addr: 127.0.0.1:8788
+  auth_token: "debug-token"
+  read_only: false
+
+signatures:
+  enabled: false
+  update_interval: 24h
+  cache_dir: /tmp/arcsent-debug-sigs
+  sources:
+    - mitre_attack

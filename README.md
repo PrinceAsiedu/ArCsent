@@ -113,7 +113,14 @@ Backup/restore (local):
 
 ```bash
 sudo ARCSENT_DATA_DIR=/var/lib/arcsent ARCSENT_CONFIG=/etc/arcsent/config.json scripts/backup.sh
-sudo scripts/restore.sh /var/lib/arcsent/backups/arcsent-backup-<timestamp>.tar.gz
+sudo scripts/restore.sh /var/lib/arcsent/backups/arcsent-backup-<timestamp>.tar.gz /var/lib/arcsent/backups/arcsent-backup-<timestamp>.sha256
+```
+
+Config validation and storage check:
+
+```bash
+./arcsent ctl validate -config configs/config.json
+./arcsent ctl storage-check -config configs/config.json
 ```
 
 ## Configuration

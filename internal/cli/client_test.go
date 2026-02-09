@@ -32,6 +32,25 @@ func TestClientAddsAuthHeader(t *testing.T) {
 	}
 }
 
+func TestClientErrorOnNon2xx(t *testing.T) {
+	transport := roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		body := io.NopCloser(strings.NewReader(`{"error":"nope"}`))
+		return &http.Response{
+			StatusCode: http.StatusUnauthorized,
+			Status:     "401 Unauthorized",
+			Body:       body,
+			Header:     http.Header{},
+		}, nil
+	})
+
+	client := NewClient("http://127.0.0.1:8788", "token")
+	client.Client = &http.Client{Transport: transport}
+	_, err := client.DoJSON(context.Background(), http.MethodGet, "/status", nil)
+	if err == nil {
+		t.Fatalf("expected error for non-2xx response")
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (rt roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {

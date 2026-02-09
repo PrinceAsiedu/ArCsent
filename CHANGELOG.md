@@ -17,3 +17,5 @@
 - Added CLI smoke test script.
 - Added healthcheck script, systemd installer helper, and logrotate config.
 - Added backup/restore and watchdog scripts, plus AppArmor profile template.
+- Added one-command local installer, backup checksums, and watchdog systemd timer units.
+- Added config validation + storage check CLI commands and secrets env file support.

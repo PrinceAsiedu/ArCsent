@@ -33,6 +33,21 @@ sudo systemctl enable --now arcsent
 sudo ARCSENT_BIN=./arcsent ARCSENT_CONFIG=/etc/arcsent/config.json scripts/install_systemd.sh
 ```
 
+### One-command local install
+
+```bash
+sudo ARCSENT_TOKEN=your-token scripts/install_local.sh
+```
+
+### Secrets file
+
+The systemd unit reads `/etc/arcsent/arcsent.env` if present. Installers can write:
+
+```
+ARCSENT_API_TOKEN=your-token
+ARCSENT_WEB_UI_TOKEN=your-token
+```
+
 ### Healthcheck
 
 ```bash
@@ -47,7 +62,7 @@ Optional logrotate config is available at `deploy/logrotate/arcsent`.
 
 ```bash
 sudo ARCSENT_DATA_DIR=/var/lib/arcsent ARCSENT_CONFIG=/etc/arcsent/config.json scripts/backup.sh
-sudo scripts/restore.sh /var/lib/arcsent/backups/arcsent-backup-<timestamp>.tar.gz
+sudo scripts/restore.sh /var/lib/arcsent/backups/arcsent-backup-<timestamp>.tar.gz /var/lib/arcsent/backups/arcsent-backup-<timestamp>.sha256
 ```
 
 ### Watchdog (optional)
@@ -59,6 +74,15 @@ ARCSENT_TOKEN=your-token scripts/watchdog.sh
 ### AppArmor (optional)
 
 AppArmor profile template: `deploy/apparmor/arcsent.apparmor`.
+
+### Watchdog systemd timer (optional)
+
+```bash
+sudo install -m 0644 deploy/systemd/arcsent-watchdog.service /etc/systemd/system/arcsent-watchdog.service
+sudo install -m 0644 deploy/systemd/arcsent-watchdog.timer /etc/systemd/system/arcsent-watchdog.timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now arcsent-watchdog.timer
+```
 
 ## Docker (local-only)
 

@@ -61,14 +61,26 @@ This runbook is for local deployments only.
 **CLI Smoke Test**
 - `ARCSENT_TOKEN=<token> scripts/ctl_smoke.sh`
 
+**Config Validate**
+- `./arcsent ctl validate -config configs/config.json`
+
+**Storage Check**
+- `./arcsent ctl storage-check -config configs/config.json`
+
 **Backup**
-- `sudo ARCSENT_DATA_DIR=/var/lib/arcsent ARCSENT_CONFIG=/etc/arcsent/config.json scripts/backup.sh`
+- `sudo ARCSENT_DATA_DIR=/var/lib/arcsent ARCSENT_CONFIG=/etc/arcsent/config.json scripts/backup.sh` (creates `.sha256` manifest)
 
 **Restore**
-- `sudo scripts/restore.sh /var/lib/arcsent/backups/arcsent-backup-<timestamp>.tar.gz`
+- `sudo scripts/restore.sh /var/lib/arcsent/backups/arcsent-backup-<timestamp>.tar.gz /var/lib/arcsent/backups/arcsent-backup-<timestamp>.sha256`
 
 **Watchdog**
 - `ARCSENT_TOKEN=<token> scripts/watchdog.sh`
+
+**Watchdog Timer**
+- `sudo install -m 0644 deploy/systemd/arcsent-watchdog.service /etc/systemd/system/arcsent-watchdog.service`
+- `sudo install -m 0644 deploy/systemd/arcsent-watchdog.timer /etc/systemd/system/arcsent-watchdog.timer`
+- `sudo systemctl daemon-reload`
+- `sudo systemctl enable --now arcsent-watchdog.timer`
 
 **Metrics**
 - `curl -H "Authorization: <token>" http://127.0.0.1:8788/metrics`

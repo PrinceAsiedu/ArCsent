@@ -7,6 +7,7 @@ SERVICE_SRC=${ARCSENT_SERVICE_SRC:-deploy/systemd/arcsent.service}
 SERVICE_DST=${ARCSENT_SERVICE_DST:-/etc/systemd/system/arcsent.service}
 DATA_DIR=${ARCSENT_DATA_DIR:-/var/lib/arcsent}
 TOKEN=${ARCSENT_TOKEN:-}
+ENV_FILE=${ARCSENT_ENV_FILE:-/etc/arcsent/arcsent.env}
 
 if [[ $EUID -ne 0 ]]; then
   echo "install_local.sh must be run as root" >&2
@@ -25,10 +26,17 @@ fi
 
 id -u arcsent >/dev/null 2>&1 || useradd --system --home "$DATA_DIR" --shell /usr/sbin/nologin arcsent
 mkdir -p "$(dirname "$CONFIG")" "$DATA_DIR"
+mkdir -p "$(dirname "$ENV_FILE")"
 chown -R arcsent:arcsent "$DATA_DIR"
 
 install -m 0755 "$BIN" /usr/local/bin/arcsent
 install -m 0644 "$SERVICE_SRC" "$SERVICE_DST"
+
+cat >"$ENV_FILE" <<EOF
+ARCSENT_API_TOKEN=$TOKEN
+ARCSENT_WEB_UI_TOKEN=$TOKEN
+EOF
+chmod 0600 "$ENV_FILE"
 
 cat >"$CONFIG" <<EOF
 {
@@ -63,13 +71,13 @@ cat >"$CONFIG" <<EOF
     "enabled": true,
     "bind_addr": "127.0.0.1:8788",
     "read_only": true,
-    "auth_token": "$TOKEN"
+    "auth_token": ""
   },
   "web_ui": {
     "enabled": true,
     "bind_addr": "127.0.0.1:8787",
     "read_only": true,
-    "auth_token": "$TOKEN"
+    "auth_token": ""
   },
   "scanners": [],
   "detection": {

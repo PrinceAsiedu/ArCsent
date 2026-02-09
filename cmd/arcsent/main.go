@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
+
 	"net/http"
 	"os"
 	"strconv"
@@ -16,6 +16,7 @@ import (
 	"github.com/ipsix/arcsent/internal/config"
 	"github.com/ipsix/arcsent/internal/daemon"
 	"github.com/ipsix/arcsent/internal/logging"
+	"github.com/ipsix/arcsent/internal/storage"
 )
 
 func main() {
@@ -79,6 +80,8 @@ func runCLI(args []string) {
 	format := fs.String("format", "json", "Output format for export (json|csv)")
 	plugin := fs.String("plugin", "", "Plugin name for trigger")
 	pretty := fs.Bool("pretty", false, "Pretty-print JSON responses")
+	configPath := fs.String("config", config.DefaultConfigPath, "Config path for validate/storage-check")
+	envFile := fs.String("env-file", "", "Env file to load before validate/storage-check")
 	fs.Parse(args)
 
 	if *token == "" {
@@ -159,6 +162,12 @@ func runCLI(args []string) {
 		}
 	case "metrics":
 		raw, err = client.DoText(ctx, http.MethodGet, "/metrics")
+	case "validate":
+		err = runValidate(*configPath, *envFile)
+		raw = []byte(`{"status":"ok"}`)
+	case "storage-check":
+		err = runStorageCheck(*configPath, *envFile)
+		raw = []byte(`{"status":"ok"}`)
 	default:
 		usageCLI()
 		os.Exit(2)
@@ -190,6 +199,8 @@ func usageCLI() {
 		"  signatures status|update",
 		"  export results|baselines",
 		"  metrics",
+		"  validate",
+		"  storage-check",
 		"",
 		"Flags:",
 		"  -addr http://127.0.0.1:8788",
@@ -197,6 +208,8 @@ func usageCLI() {
 		"  -plugin <plugin> (for trigger)",
 		"  -format json|csv (for export)",
 		"  -pretty (pretty-print JSON)",
+		"  -config <path> (for validate/storage-check)",
+		"  -env-file <path> (optional env file for validate/storage-check)",
 	}
 	_, _ = os.Stderr.WriteString(strings.Join(usage, "\n") + "\n")
 }
@@ -218,4 +231,76 @@ func maybePrettyJSON(raw []byte, pretty bool) []byte {
 	}
 	out.WriteByte('\n')
 	return out.Bytes()
+}
+
+func runValidate(configPath, envFile string) error {
+	restore, err := loadEnvFile(envFile)
+	if err != nil {
+		return err
+	}
+	defer restore()
+
+	_, err = config.Load(configPath)
+	return err
+}
+
+func runStorageCheck(configPath, envFile string) error {
+	restore, err := loadEnvFile(envFile)
+	if err != nil {
+		return err
+	}
+	defer restore()
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		return err
+	}
+	store, err := storage.NewBadgerStoreWithKey(cfg.Storage.DBPath, cfg.Storage.EncryptionKeyBase64)
+	if err != nil {
+		return err
+	}
+	return store.Close()
+}
+
+func loadEnvFile(path string) (func(), error) {
+	if path == "" {
+		return func() {}, nil
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(string(raw), "\n")
+	previous := map[string]*string{}
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+		if key == "" {
+			continue
+		}
+		if existing, ok := os.LookupEnv(key); ok {
+			copy := existing
+			previous[key] = &copy
+		} else {
+			previous[key] = nil
+		}
+		_ = os.Setenv(key, value)
+	}
+	return func() {
+		for key, value := range previous {
+			if value == nil {
+				_ = os.Unsetenv(key)
+				continue
+			}
+			_ = os.Setenv(key, *value)
+		}
+	}, nil
 }

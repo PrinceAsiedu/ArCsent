@@ -25,6 +25,20 @@ $BIN ctl -addr "$ADDR" -token "$TOKEN" metrics
 echo "== Signatures Status =="
 $BIN ctl -addr "$ADDR" -token "$TOKEN" signatures status
 
+echo "== Config Validate =="
+cmd=("$BIN" ctl -token "$TOKEN" validate -config "${ARCSENT_CONFIG:-configs/config.json}")
+if [[ -n "${ARCSENT_ENV_FILE:-}" ]]; then
+  cmd+=(-env-file "$ARCSENT_ENV_FILE")
+fi
+"${cmd[@]}"
+
+echo "== Storage Check =="
+cmd=("$BIN" ctl -token "$TOKEN" storage-check -config "${ARCSENT_CONFIG:-configs/config.json}")
+if [[ -n "${ARCSENT_ENV_FILE:-}" ]]; then
+  cmd+=(-env-file "$ARCSENT_ENV_FILE")
+fi
+"${cmd[@]}"
+
 echo "== Trigger disk usage =="
 $BIN ctl -addr "$ADDR" -token "$TOKEN" trigger system.disk_usage
 

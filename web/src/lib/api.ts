@@ -71,17 +71,33 @@ export const api = {
   getSignaturesStatus: () => api.fetch<SignatureStatus>("/signatures/status"),
   triggerSignaturesUpdate: () =>
     api.fetch<SignatureStatus>("/signatures/update", { method: "POST" }),
-  getMetricsText: async (): Promise<string> => {
+  getMetrics: async (): Promise<Record<string, number>> => {
+    const raw = await api.fetchText("/metrics");
+    const parsed: Record<string, number> = {};
+    raw.split("\n").forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return;
+      const parts = trimmed.split(/\s+/);
+      if (parts.length < 2) return;
+      const name = parts[0];
+      const value = Number(parts[1]);
+      if (Number.isFinite(value)) {
+        parsed[name] = value;
+      }
+    });
+    return parsed;
+  },
+
+  fetchText: async (path: string, options?: RequestInit): Promise<string> => {
     const token = api.getToken();
     const headers = {
       Authorization: token || "",
       "Content-Type": "text/plain",
+      ...options?.headers,
     };
-    const res = await fetch(`/api/metrics`, { headers });
+    const res = await fetch(`/api${path}`, { headers, ...options });
     if (!res.ok) {
-      if (res.status === 401) {
-        throw new Error("Unauthorized");
-      }
+      if (res.status === 401) throw new Error("Unauthorized");
       throw new Error(`Request failed: ${res.statusText}`);
     }
     return res.text();
