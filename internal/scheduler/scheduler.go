@@ -23,10 +23,10 @@ type JobConfig struct {
 }
 
 type Scheduler struct {
-	logger *logging.Logger
-	mgr    *scanner.Manager
-	mu     sync.Mutex
-	jobs   map[string]*job
+	logger   *logging.Logger
+	mgr      *scanner.Manager
+	mu       sync.Mutex
+	jobs     map[string]*job
 	onResult func(scanner.Result)
 }
 

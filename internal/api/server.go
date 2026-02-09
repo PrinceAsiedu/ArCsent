@@ -42,21 +42,7 @@ func (s *Server) Start(ctx context.Context) error {
 		return nil
 	}
 
-	mux := http.NewServeMux()
-	register := func(path string, handler http.HandlerFunc) {
-		mux.HandleFunc(path, s.withAuth(handler))
-		mux.HandleFunc("/api"+path, s.withAuth(handler))
-	}
-	register("/health", s.handleHealth)
-	register("/status", s.handleStatus)
-	register("/scanners", s.handleScanners)
-	register("/scanners/trigger/", s.handleTrigger)
-	register("/results/latest", s.handleResultsLatest)
-	register("/results/history", s.handleResultsHistory)
-	register("/findings", s.handleFindings)
-	register("/baselines", s.handleBaselines)
-
-	s.handler = mux
+	s.handler = s.buildHandler()
 	s.server = &http.Server{
 		Addr:              s.cfg.BindAddr,
 		Handler:           s.handler,
@@ -79,6 +65,23 @@ func (s *Server) Start(ctx context.Context) error {
 
 func (s *Server) Handler() http.Handler {
 	return s.handler
+}
+
+func (s *Server) buildHandler() http.Handler {
+	mux := http.NewServeMux()
+	register := func(path string, handler http.HandlerFunc) {
+		mux.HandleFunc(path, s.withAuth(handler))
+		mux.HandleFunc("/api"+path, s.withAuth(handler))
+	}
+	register("/health", s.handleHealth)
+	register("/status", s.handleStatus)
+	register("/scanners", s.handleScanners)
+	register("/scanners/trigger/", s.handleTrigger)
+	register("/results/latest", s.handleResultsLatest)
+	register("/results/history", s.handleResultsHistory)
+	register("/findings", s.handleFindings)
+	register("/baselines", s.handleBaselines)
+	return mux
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {

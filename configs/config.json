@@ -72,6 +72,32 @@
       "config": {
         "whitelist_prefixes": ["/usr/bin", "/usr/sbin"]
       }
+    },
+    {
+      "name": "auth-log",
+      "plugin": "system.auth_log",
+      "enabled": false,
+      "schedule": "10m",
+      "timeout": "10s",
+      "allow_overlap": false,
+      "run_on_start": false,
+      "config": {
+        "path": "/var/log/auth.log",
+        "max_lines": 500
+      }
+    },
+    {
+      "name": "network-listeners",
+      "plugin": "system.network_listeners",
+      "enabled": false,
+      "schedule": "10m",
+      "timeout": "10s",
+      "allow_overlap": false,
+      "run_on_start": false,
+      "config": {
+        "tcp_path": "/proc/net/tcp",
+        "udp_path": "/proc/net/udp"
+      }
     }
   ]
 }

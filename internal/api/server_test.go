@@ -18,7 +18,7 @@ import (
 
 type dummyPlugin struct{}
 
-func (d *dummyPlugin) Name() string { return "dummy" }
+func (d *dummyPlugin) Name() string                      { return "dummy" }
 func (d *dummyPlugin) Init(map[string]interface{}) error { return nil }
 func (d *dummyPlugin) Run(ctx context.Context) (*scanner.Result, error) {
 	return &scanner.Result{ScannerName: "dummy", Status: scanner.StatusSuccess}, nil
@@ -41,8 +41,7 @@ func TestAPIAuth(t *testing.T) {
 
 	cfg := config.APIConfig{Enabled: true, BindAddr: "127.0.0.1:0", AuthToken: "secret"}
 	server := New(cfg, logging.New("text"), mgr, sched, results, baseline)
-	server.Start(context.Background()) // initializes handler
-	handler := server.Handler()
+	handler := server.buildHandler()
 
 	req := httptest.NewRequest(http.MethodGet, "/status", nil)
 	rr := httptest.NewRecorder()

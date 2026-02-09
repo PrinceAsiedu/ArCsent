@@ -58,6 +58,8 @@ func (r *Runner) Run(ctx context.Context) error {
 		&system.DiskUsage{},
 		&system.FileIntegrity{},
 		&system.ProcessMonitor{},
+		&system.AuthLogMonitor{},
+		&system.NetworkListeners{},
 	}
 	for _, plugin := range plugins {
 		if err := manager.Register(plugin); err != nil {

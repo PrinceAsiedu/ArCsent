@@ -17,10 +17,11 @@ import (
 var content embed.FS
 
 type Server struct {
-	cfg    config.WebUIConfig
-	logger *logging.Logger
-	server *http.Server
-	apiURL *url.URL
+	cfg     config.WebUIConfig
+	logger  *logging.Logger
+	server  *http.Server
+	apiURL  *url.URL
+	handler http.Handler
 }
 
 func New(cfg config.WebUIConfig, apiAddr string, logger *logging.Logger) *Server {
@@ -36,20 +37,10 @@ func (s *Server) Start(ctx context.Context) error {
 		return nil
 	}
 
-	sub, err := fs.Sub(content, ".")
-	if err != nil {
-		return err
-	}
-
-	mux := http.NewServeMux()
-	mux.Handle("/api/", s.withAuthHandler(s.proxyAPI()))
-	mux.Handle("/", s.withAuthHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.FileServer(http.FS(sub)).ServeHTTP(w, r)
-	})))
-
+	s.handler, _ = s.buildHandler()
 	s.server = &http.Server{
 		Addr:              s.cfg.BindAddr,
-		Handler:           mux,
+		Handler:           s.handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -73,6 +64,23 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 	s.logger.Info("web ui stopping")
 	return s.server.Shutdown(ctx)
+}
+
+func (s *Server) Handler() http.Handler {
+	return s.handler
+}
+
+func (s *Server) buildHandler() (http.Handler, error) {
+	sub, err := fs.Sub(content, ".")
+	if err != nil {
+		return nil, err
+	}
+	mux := http.NewServeMux()
+	mux.Handle("/api/", s.withAuthHandler(s.proxyAPI()))
+	mux.Handle("/", s.withAuthHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.FileServer(http.FS(sub)).ServeHTTP(w, r)
+	})))
+	return mux, nil
 }
 
 func (s *Server) withAuthHandler(next http.Handler) http.Handler {
