@@ -27,6 +27,7 @@ type Scheduler struct {
 	mgr    *scanner.Manager
 	mu     sync.Mutex
 	jobs   map[string]*job
+	onResult func(scanner.Result)
 }
 
 func New(logger *logging.Logger, mgr *scanner.Manager) *Scheduler {
@@ -35,6 +36,20 @@ func New(logger *logging.Logger, mgr *scanner.Manager) *Scheduler {
 		mgr:    mgr,
 		jobs:   make(map[string]*job),
 	}
+}
+
+func (s *Scheduler) SetOnResult(fn func(scanner.Result)) {
+	s.onResult = fn
+}
+
+func (s *Scheduler) ListJobs() []JobConfig {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]JobConfig, 0, len(s.jobs))
+	for _, j := range s.jobs {
+		out = append(out, j.cfg)
+	}
+	return out
 }
 
 func (s *Scheduler) AddJob(cfg JobConfig) error {
@@ -166,6 +181,48 @@ func (s *Scheduler) executeJob(ctx context.Context, j *job) {
 		logging.Field{Key: "duration", Value: result.Duration.String()},
 		logging.Field{Key: "findings", Value: len(result.Findings)},
 	)
+
+	if s.onResult != nil {
+		s.onResult(*result)
+	}
+}
+
+func (s *Scheduler) RunOnce(ctx context.Context, pluginName string, timeout time.Duration) (*scanner.Result, error) {
+	p, err := s.mgr.Get(pluginName)
+	if err != nil {
+		return nil, err
+	}
+	if timeout <= 0 {
+		timeout = 2 * time.Minute
+	}
+	runCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	started := time.Now()
+	defer func() {
+		if r := recover(); r != nil {
+			s.logger.Error("runonce panic recovered",
+				logging.Field{Key: "plugin", Value: pluginName},
+				logging.Field{Key: "panic", Value: r},
+			)
+		}
+	}()
+
+	result, err := p.Run(runCtx)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return nil, fmt.Errorf("plugin returned nil result")
+	}
+	finished := time.Now()
+	result.StartedAt = started
+	result.FinishedAt = finished
+	result.Duration = finished.Sub(started)
+	if s.onResult != nil {
+		s.onResult(*result)
+	}
+	return result, nil
 }
 
 type job struct {

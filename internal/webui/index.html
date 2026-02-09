@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ArCsent Console</title>
+    <style>
+      :root {
+        --ink: #0b0b0c;
+        --paper: #f5f2e9;
+        --accent: #2b6a5f;
+        --accent-2: #d47f2b;
+        --muted: #6f6b64;
+        --card: #fffaf0;
+        --ring: rgba(43, 106, 95, 0.2);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", "Avenir Next Condensed", "Trebuchet MS", sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at top left, #f7efe1 0%, #efe8d8 40%, #e6ddcc 100%);
+        min-height: 100vh;
+      }
+
+      .hero {
+        padding: 48px 32px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .title {
+        font-size: clamp(28px, 4vw, 52px);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .subtitle {
+        max-width: 720px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+        padding: 0 32px 48px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid rgba(11, 11, 12, 0.08);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 12px 30px rgba(11, 11, 12, 0.08);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card::after {
+        content: "";
+        position: absolute;
+        width: 140px;
+        height: 140px;
+        top: -80px;
+        right: -60px;
+        background: radial-gradient(circle, rgba(212, 127, 43, 0.45), transparent 60%);
+        opacity: 0.6;
+      }
+
+      .label {
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        color: var(--muted);
+      }
+
+      .value {
+        font-size: 28px;
+        font-weight: 600;
+        margin-top: 8px;
+      }
+
+      .pill {
+        display: inline-flex;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(43, 106, 95, 0.12);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 10px;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+        font-size: 14px;
+      }
+
+      .table th,
+      .table td {
+        padding: 8px 6px;
+        border-bottom: 1px solid rgba(11, 11, 12, 0.08);
+        text-align: left;
+      }
+
+      .table th {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+      }
+
+      .tag {
+        display: inline-flex;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: rgba(11, 11, 12, 0.08);
+        font-size: 12px;
+      }
+
+      .tag.high {
+        background: rgba(212, 127, 43, 0.2);
+        color: #7c3c00;
+      }
+
+      .tag.critical {
+        background: rgba(164, 31, 31, 0.2);
+        color: #7a1313;
+      }
+
+      .tag.medium {
+        background: rgba(43, 106, 95, 0.2);
+        color: #1a4c44;
+      }
+
+      button {
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-weight: 600;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        box-shadow: 0 10px 24px var(--ring);
+      }
+
+      button.secondary {
+        background: transparent;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+      }
+
+      .input {
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(11, 11, 12, 0.2);
+        margin-top: 8px;
+      }
+
+      .status-line {
+        font-size: 14px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+
+      @media (max-width: 640px) {
+        .hero {
+          padding: 32px 20px 12px;
+        }
+        .grid {
+          padding: 0 20px 32px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="hero">
+      <div class="pill">Local Console</div>
+      <div class="title">ArCsent Security Monitor</div>
+      <div class="subtitle">
+        This console runs locally and uses your auth token to access the daemon API.
+        Set the token below to view system status.
+      </div>
+      <div class="card">
+        <div class="label">API Token</div>
+        <input id="token" class="input" type="password" placeholder="Paste your token" />
+        <div class="actions">
+          <button onclick="saveToken()">Save Token</button>
+          <button class="secondary" onclick="clearToken()">Clear</button>
+        </div>
+        <div class="status-line" id="token-status"></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <div class="label">Daemon Status</div>
+        <div class="value" id="daemon-status">Unknown</div>
+        <div class="status-line" id="daemon-detail">Awaiting token.</div>
+      </div>
+      <div class="card">
+        <div class="label">Last Check</div>
+        <div class="value" id="last-check">—</div>
+        <div class="status-line">Baseline and scanner data will appear here.</div>
+      </div>
+      <div class="card">
+        <div class="label">Actions</div>
+        <div class="value" id="scanner-status">0 plugins, 0 scheduled</div>
+        <div class="status-line">Trigger scans from the API.</div>
+        <select id="scanner-select" class="input"></select>
+        <div class="actions">
+          <button onclick="triggerScan()">Trigger Scan</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card" style="grid-column: span 2;">
+        <div class="label">Recent Findings</div>
+        <table class="table" id="findings-table">
+          <thead>
+            <tr>
+              <th>Scanner</th>
+              <th>Severity</th>
+              <th>Description</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="label">Baselines</div>
+        <table class="table" id="baselines-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Mean</th>
+              <th>Min</th>
+              <th>Max</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <script>
+      const tokenInput = document.getElementById("token");
+      const tokenStatus = document.getElementById("token-status");
+      const daemonStatus = document.getElementById("daemon-status");
+      const daemonDetail = document.getElementById("daemon-detail");
+      const lastCheck = document.getElementById("last-check");
+      const scannerStatus = document.getElementById("scanner-status");
+      const scannerSelect = document.getElementById("scanner-select");
+      const findingsTable = document.querySelector("#findings-table tbody");
+      const baselinesTable = document.querySelector("#baselines-table tbody");
+
+      function saveToken() {
+        const value = tokenInput.value.trim();
+        if (!value) {
+          tokenStatus.textContent = "Token is required.";
+          return;
+        }
+        localStorage.setItem("arcsent_token", value);
+        tokenStatus.textContent = "Token saved.";
+        refresh();
+      }
+
+      function clearToken() {
+        localStorage.removeItem("arcsent_token");
+        tokenInput.value = "";
+        tokenStatus.textContent = "Token cleared.";
+        daemonStatus.textContent = "Unknown";
+        daemonDetail.textContent = "Awaiting token.";
+      }
+
+      async function refresh() {
+        const token = localStorage.getItem("arcsent_token");
+        if (!token) {
+          return;
+        }
+        tokenInput.value = token;
+        try {
+          const res = await fetch("/api/status", {
+            headers: { Authorization: token }
+          });
+          if (!res.ok) {
+            daemonStatus.textContent = "Auth failed";
+            daemonDetail.textContent = "Check API token.";
+            return;
+          }
+          const payload = await res.json();
+          daemonStatus.textContent = payload.status || "running";
+          daemonDetail.textContent = "API reachable.";
+          lastCheck.textContent = new Date().toLocaleTimeString();
+          await loadScanners(token);
+          await loadLatestResults(token);
+          await loadFindings(token);
+          await loadBaselines(token);
+        } catch (err) {
+          daemonStatus.textContent = "Offline";
+          daemonDetail.textContent = "Unable to reach API.";
+        }
+      }
+
+      async function loadScanners(token) {
+        const res = await fetch("/api/scanners", { headers: { Authorization: token } });
+        if (!res.ok) {
+          return;
+        }
+        const payload = await res.json();
+        const plugins = payload.plugins || [];
+        const jobs = payload.jobs || [];
+        scannerStatus.textContent = `${plugins.length} plugins, ${jobs.length} scheduled`;
+        scannerSelect.innerHTML = "";
+        plugins.forEach((plugin) => {
+          const opt = document.createElement("option");
+          opt.value = plugin;
+          opt.textContent = plugin;
+          scannerSelect.appendChild(opt);
+        });
+      }
+
+      async function loadLatestResults(token) {
+        const res = await fetch("/api/results/latest", { headers: { Authorization: token } });
+        if (!res.ok) {
+          return;
+        }
+        const payload = await res.json();
+        if (!Array.isArray(payload) || payload.length === 0) {
+          return;
+        }
+        const totalFindings = payload.reduce((sum, item) => sum + (item.findings || 0), 0);
+        document.getElementById("daemon-detail").textContent = `Latest findings: ${totalFindings}`;
+      }
+
+      async function loadFindings(token) {
+        const res = await fetch("/api/findings", { headers: { Authorization: token } });
+        if (!res.ok) {
+          return;
+        }
+        const payload = await res.json();
+        findingsTable.innerHTML = "";
+        if (!Array.isArray(payload) || payload.length === 0) {
+          findingsTable.innerHTML = "<tr><td colspan='4'>No findings yet.</td></tr>";
+          return;
+        }
+        payload.slice(0, 10).forEach((finding) => {
+          const row = document.createElement("tr");
+          const severity = (finding.severity || "info").toLowerCase();
+          row.innerHTML = `
+            <td>${finding.scanner_name || "-"}</td>
+            <td><span class="tag ${severity}">${severity}</span></td>
+            <td>${finding.description || "-"}</td>
+            <td>${formatTime(finding.occurred_at)}</td>
+          `;
+          findingsTable.appendChild(row);
+        });
+      }
+
+      async function loadBaselines(token) {
+        const res = await fetch("/api/baselines", { headers: { Authorization: token } });
+        if (!res.ok) {
+          return;
+        }
+        const payload = await res.json();
+        baselinesTable.innerHTML = "";
+        if (!Array.isArray(payload) || payload.length === 0) {
+          baselinesTable.innerHTML = "<tr><td colspan='4'>No baselines yet.</td></tr>";
+          return;
+        }
+        payload.slice(0, 10).forEach((baseline) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${baseline.metric || "-"}</td>
+            <td>${formatNumber(baseline.mean)}</td>
+            <td>${formatNumber(baseline.min)}</td>
+            <td>${formatNumber(baseline.max)}</td>
+          `;
+          baselinesTable.appendChild(row);
+        });
+      }
+
+      function formatTime(value) {
+        if (!value) return "-";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "-";
+        return date.toLocaleTimeString();
+      }
+
+      function formatNumber(value) {
+        if (typeof value !== "number") return "-";
+        return value.toFixed(2);
+      }
+
+      async function triggerScan() {
+        const token = localStorage.getItem("arcsent_token");
+        const plugin = scannerSelect.value;
+        if (!token || !plugin) {
+          return;
+        }
+        const res = await fetch(`/api/scanners/trigger/${plugin}`, {
+          method: "POST",
+          headers: { Authorization: token }
+        });
+        if (res.ok) {
+          tokenStatus.textContent = `Triggered ${plugin}`;
+          refresh();
+        } else {
+          tokenStatus.textContent = `Failed to trigger ${plugin}`;
+        }
+      }
+
+      refresh();
+    </script>
+  </body>
+</html>

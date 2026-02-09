@@ -7,7 +7,7 @@
     "shutdown_timeout": "10s"
   },
   "storage": {
-    "db_path": "/var/lib/arcsent/arcsent.db"
+    "db_path": "/var/lib/arcsent/badger"
   },
   "signatures": {
     "enabled": false,
@@ -22,10 +22,56 @@
     "cache_dir": "/var/lib/arcsent/signatures",
     "airgap_import_path": ""
   },
+  "api": {
+    "enabled": false,
+    "bind_addr": "127.0.0.1:8788",
+    "read_only": true,
+    "auth_token": ""
+  },
   "web_ui": {
     "enabled": false,
     "bind_addr": "127.0.0.1:8787",
     "read_only": true,
     "auth_token": ""
-  }
+  },
+  "scanners": [
+    {
+      "name": "disk-usage",
+      "plugin": "system.disk_usage",
+      "enabled": false,
+      "schedule": "10m",
+      "timeout": "10s",
+      "allow_overlap": false,
+      "run_on_start": true,
+      "config": {
+        "path": "/",
+        "warn_percent": 85,
+        "crit_percent": 95
+      }
+    },
+    {
+      "name": "file-integrity",
+      "plugin": "system.file_integrity",
+      "enabled": false,
+      "schedule": "6h",
+      "timeout": "2m",
+      "allow_overlap": false,
+      "run_on_start": false,
+      "config": {
+        "paths": ["/etc", "/bin"]
+      }
+    },
+    {
+      "name": "process-monitor",
+      "plugin": "system.process_monitor",
+      "enabled": false,
+      "schedule": "5m",
+      "timeout": "20s",
+      "allow_overlap": false,
+      "run_on_start": false,
+      "config": {
+        "whitelist_prefixes": ["/usr/bin", "/usr/sbin"]
+      }
+    }
+  ]
 }

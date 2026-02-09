@@ -25,3 +25,11 @@ go build ./...
 - `web_ui.enabled` defaults to `false`; when enabled, `web_ui.auth_token` is required.
 - `daemon.user` and `daemon.group` may be numeric IDs or names when running as root.
 - Scheduler currently accepts `@every <duration>` or raw duration strings (cron support later).
+- Phase 4 includes initial system plugins: disk usage, file integrity, and process monitor.
+- Phase 5 adds baseline storage and anomaly detection (Badger embedded store).
+- Phase 6 adds local-only API and alerting (log channel).
+- API and alerting are wired into the daemon core (API runs when enabled).
+- Phase 7 adds a local-only web UI (token-protected).
+- API endpoints now include scanner listing, trigger, and recent results for the UI.
+- Storage path now expects a BadgerDB directory (default: `/var/lib/arcsent/badger`).
+- Phase 8 adds systemd hardening and a local-only Dockerfile in `deploy/`.

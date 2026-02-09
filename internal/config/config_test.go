@@ -47,3 +47,26 @@ func TestShutdownTimeoutDuration(t *testing.T) {
 		t.Fatalf("expected fallback duration, got %s", got)
 	}
 }
+
+func TestValidateAPIRequiresToken(t *testing.T) {
+	cfg := Default()
+	cfg.API.Enabled = true
+	cfg.API.AuthToken = ""
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for missing api.auth_token")
+	}
+}
+
+func TestValidateScannerSchedule(t *testing.T) {
+	cfg := Default()
+	cfg.Scanners = []ScannerConfig{
+		{
+			Name:    "test",
+			Plugin:  "system.disk_usage",
+			Enabled: true,
+		},
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for missing scanner schedule")
+	}
+}

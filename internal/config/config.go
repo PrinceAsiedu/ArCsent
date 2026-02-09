@@ -21,7 +21,9 @@ type Config struct {
 	Daemon     DaemonConfig     `json:"daemon"`
 	Storage    StorageConfig    `json:"storage"`
 	Signatures SignaturesConfig `json:"signatures"`
+	API        APIConfig        `json:"api"`
 	WebUI      WebUIConfig      `json:"web_ui"`
+	Scanners   []ScannerConfig  `json:"scanners"`
 }
 
 type DaemonConfig struct {
@@ -51,6 +53,24 @@ type WebUIConfig struct {
 	AuthToken string `json:"auth_token"`
 }
 
+type APIConfig struct {
+	Enabled   bool   `json:"enabled"`
+	BindAddr  string `json:"bind_addr"`
+	ReadOnly  bool   `json:"read_only"`
+	AuthToken string `json:"auth_token"`
+}
+
+type ScannerConfig struct {
+	Name         string                 `json:"name"`
+	Plugin       string                 `json:"plugin"`
+	Enabled      bool                   `json:"enabled"`
+	Schedule     string                 `json:"schedule"`
+	Timeout      string                 `json:"timeout"`
+	AllowOverlap bool                   `json:"allow_overlap"`
+	RunOnStart   bool                   `json:"run_on_start"`
+	Config       map[string]interface{} `json:"config"`
+}
+
 func Default() Config {
 	return Config{
 		Daemon: DaemonConfig{
@@ -61,7 +81,7 @@ func Default() Config {
 			ShutdownTimeout: "10s",
 		},
 		Storage: StorageConfig{
-			DBPath: "/var/lib/arcsent/arcsent.db",
+			DBPath: "/var/lib/arcsent/badger",
 		},
 		Signatures: SignaturesConfig{
 			Enabled:        false,
@@ -69,11 +89,17 @@ func Default() Config {
 			Sources:        signatures.DefaultSources(),
 			CacheDir:       "/var/lib/arcsent/signatures",
 		},
+		API: APIConfig{
+			Enabled:  false,
+			BindAddr: "127.0.0.1:8788",
+			ReadOnly: true,
+		},
 		WebUI: WebUIConfig{
 			Enabled:  false,
 			BindAddr: "127.0.0.1:8787",
 			ReadOnly: true,
 		},
+		Scanners: []ScannerConfig{},
 	}
 }
 
@@ -170,6 +196,34 @@ func (c Config) Validate() error {
 		}
 	}
 
+	if c.API.Enabled {
+		if c.API.BindAddr == "" {
+			errs = append(errs, "api.bind_addr is required when enabled")
+		}
+		if c.API.AuthToken == "" {
+			errs = append(errs, "api.auth_token is required when enabled")
+		}
+	}
+
+	for i, sc := range c.Scanners {
+		if sc.Name == "" {
+			errs = append(errs, fmt.Sprintf("scanners[%d].name is required", i))
+		}
+		if sc.Plugin == "" {
+			errs = append(errs, fmt.Sprintf("scanners[%d].plugin is required", i))
+		}
+		if sc.Enabled {
+			if sc.Schedule == "" {
+				errs = append(errs, fmt.Sprintf("scanners[%d].schedule is required when enabled", i))
+			}
+		}
+		if sc.Timeout != "" {
+			if _, err := time.ParseDuration(sc.Timeout); err != nil {
+				errs = append(errs, fmt.Sprintf("scanners[%d].timeout must be a valid duration", i))
+			}
+		}
+	}
+
 	if len(errs) > 0 {
 		return errors.New(strings.Join(errs, "; "))
 	}
@@ -193,7 +247,21 @@ func (c Config) Redacted() Config {
 	if clone.WebUI.AuthToken != "" {
 		clone.WebUI.AuthToken = "REDACTED"
 	}
+	if clone.API.AuthToken != "" {
+		clone.API.AuthToken = "REDACTED"
+	}
 	return clone
+}
+
+func (s ScannerConfig) TimeoutDuration() time.Duration {
+	if s.Timeout == "" {
+		return 0
+	}
+	parsed, err := time.ParseDuration(s.Timeout)
+	if err != nil {
+		return 0
+	}
+	return parsed
 }
 
 func applyEnvOverrides(cfg *Config) {
@@ -209,5 +277,13 @@ func applyEnvOverrides(cfg *Config) {
 		if parsed, err := strconv.ParseBool(v); err == nil {
 			cfg.Signatures.Enabled = parsed
 		}
+	}
+	if v, ok := os.LookupEnv("ARCSENT_API_ENABLED"); ok {
+		if parsed, err := strconv.ParseBool(v); err == nil {
+			cfg.API.Enabled = parsed
+		}
+	}
+	if v, ok := os.LookupEnv("ARCSENT_API_TOKEN"); ok && v != "" {
+		cfg.API.AuthToken = v
 	}
 }

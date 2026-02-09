@@ -10,9 +10,9 @@ import (
 )
 
 type DiskUsage struct {
-	path         string
-	warnPercent  float64
-	critPercent  float64
+	path        string
+	warnPercent float64
+	critPercent float64
 }
 
 func (d *DiskUsage) Name() string { return "system.disk_usage" }
@@ -55,13 +55,13 @@ func (d *DiskUsage) Run(_ context.Context) (*scanner.Result, error) {
 		ScannerName: d.Name(),
 		Status:      scanner.StatusSuccess,
 		Metadata: map[string]interface{}{
-			"path":       d.path,
-			"total":      total,
-			"used":       used,
-			"used_pct":   usedPct,
-			"warn_pct":   d.warnPercent,
-			"crit_pct":   d.critPercent,
-			"timestamp":  time.Now().Format(time.RFC3339),
+			"path":      d.path,
+			"total":     total,
+			"used":      used,
+			"used_pct":  usedPct,
+			"warn_pct":  d.warnPercent,
+			"crit_pct":  d.critPercent,
+			"timestamp": time.Now().Format(time.RFC3339),
 		},
 	}
 
