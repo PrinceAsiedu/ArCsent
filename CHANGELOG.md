@@ -15,3 +15,5 @@
 - Added `arcsent ctl` CLI for local ops (status, scanners, trigger, signatures, exports, metrics).
 - Added CLI pretty-print option and bash completion script.
 - Added CLI smoke test script.
+- Added healthcheck script, systemd installer helper, and logrotate config.
+- Added backup/restore and watchdog scripts, plus AppArmor profile template.

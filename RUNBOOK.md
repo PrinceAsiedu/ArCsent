@@ -12,6 +12,7 @@ This runbook is for local deployments only.
 2. Web UI: open `http://127.0.0.1:8787/` and enter token.
 3. CLI status: `ARCSENT_TOKEN=<token> ./arcsent ctl status`
 4. CLI metrics: `ARCSENT_TOKEN=<token> ./arcsent ctl metrics`
+5. Full healthcheck: `ARCSENT_TOKEN=<token> scripts/healthcheck.sh`
 
 **Trigger a Scan**
 1. `curl -X POST -H "Authorization: <token>" http://127.0.0.1:8788/scanners/trigger/system.disk_usage`
@@ -59,6 +60,15 @@ This runbook is for local deployments only.
 
 **CLI Smoke Test**
 - `ARCSENT_TOKEN=<token> scripts/ctl_smoke.sh`
+
+**Backup**
+- `sudo ARCSENT_DATA_DIR=/var/lib/arcsent ARCSENT_CONFIG=/etc/arcsent/config.json scripts/backup.sh`
+
+**Restore**
+- `sudo scripts/restore.sh /var/lib/arcsent/backups/arcsent-backup-<timestamp>.tar.gz`
+
+**Watchdog**
+- `ARCSENT_TOKEN=<token> scripts/watchdog.sh`
 
 **Metrics**
 - `curl -H "Authorization: <token>" http://127.0.0.1:8788/metrics`

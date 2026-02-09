@@ -1,0 +1,9 @@
+[Unit]
+Description=ArCsent Watchdog
+After=network.target
+
+[Service]
+Type=oneshot
+Environment=ARCSENT_ADDR=http://127.0.0.1:8788
+Environment=ARCSENT_TOKEN=change-me
+ExecStart=/usr/local/bin/arcsent-watchdog

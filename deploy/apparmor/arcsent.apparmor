@@ -1,0 +1,16 @@
+#include <tunables/global>
+
+/usr/local/bin/arcsent {
+  #include <abstractions/base>
+
+  capability net_bind_service,
+
+  /usr/local/bin/arcsent rix,
+  /etc/arcsent/** r,
+  /var/lib/arcsent/** rwk,
+  /proc/** r,
+  /sys/** r,
+  /var/log/** r,
+
+  deny /home/** rwklx,
+}

@@ -103,6 +103,19 @@ Bash completion (optional):
 source scripts/arcsent_ctl_completion.bash
 ```
 
+Healthcheck (CLI):
+
+```bash
+ARCSENT_TOKEN=your-token scripts/healthcheck.sh
+```
+
+Backup/restore (local):
+
+```bash
+sudo ARCSENT_DATA_DIR=/var/lib/arcsent ARCSENT_CONFIG=/etc/arcsent/config.json scripts/backup.sh
+sudo scripts/restore.sh /var/lib/arcsent/backups/arcsent-backup-<timestamp>.tar.gz
+```
+
 ## Configuration
 
 Config is JSON and validated at startup.

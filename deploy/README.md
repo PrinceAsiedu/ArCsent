@@ -27,6 +27,39 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now arcsent
 ```
 
+### Quick install
+
+```bash
+sudo ARCSENT_BIN=./arcsent ARCSENT_CONFIG=/etc/arcsent/config.json scripts/install_systemd.sh
+```
+
+### Healthcheck
+
+```bash
+ARCSENT_TOKEN=your-token scripts/healthcheck.sh
+```
+
+### Log rotation
+
+Optional logrotate config is available at `deploy/logrotate/arcsent`.
+
+### Backup/Restore
+
+```bash
+sudo ARCSENT_DATA_DIR=/var/lib/arcsent ARCSENT_CONFIG=/etc/arcsent/config.json scripts/backup.sh
+sudo scripts/restore.sh /var/lib/arcsent/backups/arcsent-backup-<timestamp>.tar.gz
+```
+
+### Watchdog (optional)
+
+```bash
+ARCSENT_TOKEN=your-token scripts/watchdog.sh
+```
+
+### AppArmor (optional)
+
+AppArmor profile template: `deploy/apparmor/arcsent.apparmor`.
+
 ## Docker (local-only)
 
 ```bash

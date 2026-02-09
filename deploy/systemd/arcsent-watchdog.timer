@@ -1,0 +1,10 @@
+[Unit]
+Description=Run ArCsent Watchdog
+
+[Timer]
+OnBootSec=2m
+OnUnitActiveSec=2m
+Unit=arcsent-watchdog.service
+
+[Install]
+WantedBy=timers.target
