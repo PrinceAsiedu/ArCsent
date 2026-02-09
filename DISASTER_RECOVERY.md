@@ -6,6 +6,7 @@ Local-only deployment. Focus is on restoring the host and local data.
 **Backups**
 1. Backup `/etc/arcsent/config.json`.
 2. Backup `/var/lib/arcsent/badger` directory.
+3. If encryption is enabled, backup the base64 key securely.
 
 **Restore**
 1. Restore config and storage directory.

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ipsix/arcsent/internal/config"
@@ -40,7 +41,7 @@ func TestAPIAuth(t *testing.T) {
 	baseline := detection.NewManager(store)
 
 	cfg := config.APIConfig{Enabled: true, BindAddr: "127.0.0.1:0", AuthToken: "secret"}
-	server := New(cfg, logging.New("text"), mgr, sched, results, baseline)
+	server := New(cfg, logging.New("text"), mgr, sched, results, baseline, nil, nil, nil)
 	handler := server.buildHandler()
 
 	req := httptest.NewRequest(http.MethodGet, "/status", nil)
@@ -56,5 +57,35 @@ func TestAPIAuth(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected ok with token, got %d", rr.Code)
+	}
+}
+
+func TestMetricsEndpoint(t *testing.T) {
+	mgr := scanner.NewManager()
+	if err := mgr.Register(&dummyPlugin{}); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	sched := scheduler.New(logging.New("text"), mgr)
+	results := state.NewResultCache(10)
+	store, err := storage.NewBadgerStore(filepath.Join(t.TempDir(), "badger"))
+	if err != nil {
+		t.Fatalf("store: %v", err)
+	}
+	defer store.Close()
+	baseline := detection.NewManager(store)
+
+	cfg := config.APIConfig{Enabled: true, BindAddr: "127.0.0.1:0", AuthToken: "secret"}
+	server := New(cfg, logging.New("text"), mgr, sched, results, baseline, nil, nil, nil)
+	handler := server.buildHandler()
+
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	req.Header.Set("Authorization", "secret")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected ok, got %d", rr.Code)
+	}
+	if got := rr.Body.String(); got == "" || !strings.Contains(got, "arcsent_up") {
+		t.Fatalf("expected metrics body to include arcsent_up, got: %s", got)
 	}
 }

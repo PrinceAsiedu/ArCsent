@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/base64"
 	"fmt"
 	"path/filepath"
 
@@ -12,10 +13,24 @@ type BadgerStore struct {
 }
 
 func NewBadgerStore(path string) (*BadgerStore, error) {
+	return NewBadgerStoreWithKey(path, "")
+}
+
+func NewBadgerStoreWithKey(path string, keyBase64 string) (*BadgerStore, error) {
 	if path == "" {
 		return nil, fmt.Errorf("storage path is required")
 	}
 	opts := badger.DefaultOptions(path)
+	if keyBase64 != "" {
+		key, err := base64.StdEncoding.DecodeString(keyBase64)
+		if err != nil {
+			return nil, fmt.Errorf("decode encryption key: %w", err)
+		}
+		if len(key) != 32 {
+			return nil, fmt.Errorf("encryption key must be 32 bytes")
+		}
+		opts = opts.WithEncryptionKey(key)
+	}
 	db, err := badger.Open(opts)
 	if err != nil {
 		return nil, fmt.Errorf("open badger: %w", err)
@@ -76,6 +91,15 @@ func (b *BadgerStore) ForEach(bucket string, fn func(key, value []byte) error) e
 			}
 		}
 		return nil
+	})
+}
+
+func (b *BadgerStore) Delete(bucket, key string) error {
+	if bucket == "" || key == "" {
+		return fmt.Errorf("bucket and key are required")
+	}
+	return b.db.Update(func(txn *badger.Txn) error {
+		return txn.Delete(makeKey(bucket, key))
 	})
 }
 

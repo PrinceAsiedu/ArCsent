@@ -148,6 +148,27 @@ func (s *Scheduler) Stop() {
 	}
 }
 
+func (s *Scheduler) ReplaceJobs(ctx context.Context, configs []JobConfig) error {
+	s.mu.Lock()
+	for _, j := range s.jobs {
+		if j.started {
+			close(j.stop)
+			j.started = false
+		}
+	}
+	s.jobs = make(map[string]*job)
+	s.mu.Unlock()
+
+	for _, cfg := range configs {
+		if err := s.AddJob(cfg); err != nil {
+			return err
+		}
+	}
+
+	s.Start(ctx)
+	return nil
+}
+
 func (s *Scheduler) runJob(ctx context.Context, j *job) {
 	for {
 		if j.cfg.RunOnStart && j.state.LastRun.IsZero() {

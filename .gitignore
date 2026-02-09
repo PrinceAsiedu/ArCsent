@@ -35,3 +35,7 @@ go.work.sum
 artifacts/
 
 prompts/*
+
+web/node_modules/
+
+./.gitignore

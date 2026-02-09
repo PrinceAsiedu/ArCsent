@@ -1,9 +1,15 @@
 SHELL := /bin/bash
 
-.PHONY: build test lint vuln sbom fmt
+.PHONY: build test lint vuln sbom fmt ui-build
 
-build:
-	go build ./...
+build: ui-build
+	go build -v ./...
+
+ui-build:
+	cd web && npm install && npm run build
+	mkdir -p internal/webui/dist
+	rm -rf internal/webui/dist/*
+	cp -r web/dist/* internal/webui/dist/
 
 test:
 	go test -race -cover ./...

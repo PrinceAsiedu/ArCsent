@@ -52,3 +52,22 @@ func TestBadgerStoreForEach(t *testing.T) {
 		t.Fatalf("expected 2 items, got %d", seen)
 	}
 }
+
+func TestBadgerStoreDelete(t *testing.T) {
+	dir := t.TempDir()
+	store, err := NewBadgerStore(filepath.Join(dir, "badger"))
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer store.Close()
+
+	if err := store.Put("bucket", "key", []byte("value")); err != nil {
+		t.Fatalf("put: %v", err)
+	}
+	if err := store.Delete("bucket", "key"); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	if _, err := store.Get("bucket", "key"); err == nil {
+		t.Fatalf("expected not found after delete")
+	}
+}

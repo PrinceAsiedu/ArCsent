@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ipsix/arcsent/internal/config"
 	"github.com/ipsix/arcsent/internal/logging"
 )
 
-//go:embed index.html
+//go:embed dist/*
 var content embed.FS
 
 type Server struct {
@@ -37,7 +38,12 @@ func (s *Server) Start(ctx context.Context) error {
 		return nil
 	}
 
-	s.handler, _ = s.buildHandler()
+	h, err := s.buildHandler()
+	if err != nil {
+		return err
+	}
+	s.handler = h
+
 	s.server = &http.Server{
 		Addr:              s.cfg.BindAddr,
 		Handler:           s.handler,
@@ -70,16 +76,45 @@ func (s *Server) Handler() http.Handler {
 	return s.handler
 }
 
+func (s *Server) UpdateConfig(cfg config.WebUIConfig) {
+	s.cfg = cfg
+}
+
 func (s *Server) buildHandler() (http.Handler, error) {
-	sub, err := fs.Sub(content, ".")
+	// Access the "dist" directory within the embedded filesystem
+	distFS, err := fs.Sub(content, "dist")
 	if err != nil {
 		return nil, err
 	}
+
 	mux := http.NewServeMux()
+
+	// API Proxy
 	mux.Handle("/api/", s.withAuthHandler(s.proxyAPI()))
+
+	// SPA Handler
+	fileServer := http.FileServer(http.FS(distFS))
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.FileServer(http.FS(sub)).ServeHTTP(w, r)
+		// If the requested file exists, serve it
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		if path != "" {
+			if _, err := distFS.Open(path); err == nil {
+				fileServer.ServeHTTP(w, r)
+				return
+			}
+		}
+		// Otherwise, serve index.html for client-side routing
+		// We manually open index.html from distFS to serve it
+		indexFile, err := http.FS(distFS).Open("index.html")
+		if err != nil {
+			http.Error(w, "Web UI not built", http.StatusInternalServerError)
+			return
+		}
+		defer indexFile.Close()
+		stat, _ := indexFile.Stat()
+		http.ServeContent(w, r, "index.html", stat.ModTime(), indexFile)
 	}))
+
 	return mux, nil
 }
 

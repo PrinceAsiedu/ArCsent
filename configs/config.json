@@ -8,7 +8,9 @@
     "drop_privileges": false
   },
   "storage": {
-    "db_path": "/var/lib/arcsent/badger"
+    "db_path": "/var/lib/arcsent/badger",
+    "retention_days": 30,
+    "encryption_key_base64": ""
   },
   "signatures": {
     "enabled": false,
@@ -21,7 +23,8 @@
       "exploit_db"
     ],
     "cache_dir": "/var/lib/arcsent/signatures",
-    "airgap_import_path": ""
+    "airgap_import_path": "",
+    "source_urls": {}
   },
   "api": {
     "enabled": false,
@@ -36,6 +39,22 @@
     "auth_token": ""
   },
   "scanners": [
+    {
+      "name": "cpu-memory",
+      "plugin": "system.cpu_memory",
+      "enabled": false,
+      "schedule": "5m",
+      "timeout": "5s",
+      "max_retries": 0,
+      "retry_backoff": "2s",
+      "retry_max": "30s",
+      "allow_overlap": false,
+      "run_on_start": true,
+      "config": {
+        "sample_ms": 200,
+        "include_swap": true
+      }
+    },
     {
       "name": "disk-usage",
       "plugin": "system.disk_usage",
@@ -69,6 +88,19 @@
       }
     },
     {
+      "name": "load-average",
+      "plugin": "system.load_avg",
+      "enabled": false,
+      "schedule": "5m",
+      "timeout": "5s",
+      "max_retries": 0,
+      "retry_backoff": "2s",
+      "retry_max": "30s",
+      "allow_overlap": false,
+      "run_on_start": true,
+      "config": {}
+    },
+    {
       "name": "process-monitor",
       "plugin": "system.process_monitor",
       "enabled": false,
@@ -82,6 +114,19 @@
       "config": {
         "whitelist_prefixes": ["/usr/bin", "/usr/sbin"]
       }
+    },
+    {
+      "name": "uptime",
+      "plugin": "system.uptime",
+      "enabled": false,
+      "schedule": "10m",
+      "timeout": "5s",
+      "max_retries": 0,
+      "retry_backoff": "2s",
+      "retry_max": "30s",
+      "allow_overlap": false,
+      "run_on_start": true,
+      "config": {}
     },
     {
       "name": "auth-log",
@@ -116,4 +161,36 @@
       }
     }
   ]
+  ,
+  "detection": {
+    "correlation_window": "5m",
+    "correlation_min_scanners": 2,
+    "correlation_cooldown": "5m",
+    "drift_consecutive": 3,
+    "rules": [
+      {
+        "name": "disk-high",
+        "scanner": "system.disk_usage",
+        "metric": "used_pct",
+        "operator": "gte",
+        "threshold": 90,
+        "severity": "high",
+        "description": "Disk usage exceeded 90%"
+      }
+    ]
+  }
+  ,
+  "alerting": {
+    "enabled": false,
+    "dedup_window": "5m",
+    "retry_max": 3,
+    "retry_backoff": "2s",
+    "channels": [
+      { "type": "log", "enabled": true, "severity": ["info", "low", "medium", "high", "critical"] }
+    ]
+  },
+  "security": {
+    "self_integrity": false,
+    "expected_sha256": ""
+  }
 }

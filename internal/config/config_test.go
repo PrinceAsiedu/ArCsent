@@ -21,9 +21,13 @@ func TestValidateWebUIRequiresToken(t *testing.T) {
 func TestRedacted(t *testing.T) {
 	cfg := Default()
 	cfg.WebUI.AuthToken = "secret"
+	cfg.Signatures.SourceURLs = map[string]string{"osv": "https://example.com"}
 	redacted := cfg.Redacted()
 	if redacted.WebUI.AuthToken == "secret" {
 		t.Fatalf("expected auth token to be redacted")
+	}
+	if redacted.Signatures.SourceURLs["osv"] == "https://example.com" {
+		t.Fatalf("expected source url to be redacted")
 	}
 }
 
@@ -78,4 +82,47 @@ func TestValidateDropPrivilegesRequiresUserGroup(t *testing.T) {
 	cfg.Daemon.Group = ""
 	// Only enforce when running as root, so this test simply ensures no panic.
 	_ = cfg.Validate()
+}
+
+func TestValidateDetectionRule(t *testing.T) {
+	cfg := Default()
+	cfg.Detection.Rules = []RuleConfig{
+		{
+			Name:      "rule",
+			Scanner:   "system.disk_usage",
+			Metric:    "used_pct",
+			Operator:  "gte",
+			Threshold: 90,
+		},
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected valid rule, got %v", err)
+	}
+}
+
+func TestValidateStorageEncryptionKey(t *testing.T) {
+	cfg := Default()
+	cfg.Storage.EncryptionKeyBase64 = "not-base64"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for invalid encryption key")
+	}
+}
+
+func TestValidateAlertingConfig(t *testing.T) {
+	cfg := Default()
+	cfg.Alerting.DedupWindow = "bad"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for alerting.dedup_window")
+	}
+}
+
+func TestSignaturesSourceURLsValidation(t *testing.T) {
+	cfg := Default()
+	cfg.Signatures.Enabled = true
+	cfg.Signatures.SourceURLs = map[string]string{
+		"unknown": "",
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for signatures.source_urls")
+	}
 }

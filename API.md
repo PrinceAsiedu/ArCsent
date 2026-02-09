@@ -22,5 +22,15 @@ Send the token in `Authorization` header or `?token=` query parameter.
    Returns recent findings.
 8. `GET /baselines`  
    Returns current baselines.
+9. `GET /export/results`  
+   Returns all stored results (use `?format=csv` for CSV).
+10. `GET /export/baselines`  
+   Returns baselines (use `?format=csv` for CSV).
+11. `GET /signatures/status`  
+   Returns the latest signatures update status (including per-source results).
+12. `POST /signatures/update`  
+   Triggers a signatures update and returns the update status.
+13. `GET /metrics`  
+   Returns Prometheus-style metrics (text format).
 
 The same endpoints are available under `/api/*`.

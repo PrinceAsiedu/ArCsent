@@ -26,6 +26,8 @@ type Baseline struct {
 	Max         float64   `json:"max"`
 	Samples     []float64 `json:"samples"`
 	UpdatedAt   time.Time `json:"updated_at"`
+	DriftCount  int       `json:"drift_count"`
+	LastValue   float64   `json:"last_value"`
 }
 
 type Manager struct {
@@ -72,11 +74,40 @@ func (m *Manager) Update(scannerName, metric string, value float64) (*Baseline, 
 		baseline.Samples = baseline.Samples[len(baseline.Samples)-maxSamples:]
 	}
 	baseline.UpdatedAt = time.Now().UTC()
+	baseline.LastValue = value
 
 	if err := m.put(baseline); err != nil {
 		return nil, err
 	}
 	return baseline, nil
+}
+
+func (m *Manager) DetectDrift(scannerName, metric string, value float64, consecutive int) (bool, string, error) {
+	if consecutive < 1 {
+		consecutive = 1
+	}
+	baseline, err := m.get(scannerName, metric)
+	if err != nil {
+		return false, "", err
+	}
+	anomaly, reason, err := m.IsAnomaly(scannerName, metric, value)
+	if err != nil {
+		return false, "", err
+	}
+	if anomaly {
+		baseline.DriftCount++
+	} else {
+		baseline.DriftCount = 0
+	}
+	baseline.LastValue = value
+	baseline.UpdatedAt = time.Now().UTC()
+	if err := m.put(baseline); err != nil {
+		return false, "", err
+	}
+	if baseline.DriftCount >= consecutive {
+		return true, "drift:" + reason, nil
+	}
+	return false, "no_drift", nil
 }
 
 func (m *Manager) IsAnomaly(scannerName, metric string, value float64) (bool, string, error) {
@@ -125,6 +156,19 @@ func (m *Manager) List() ([]Baseline, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+func (m *Manager) PruneOlderThan(cutoff time.Time) error {
+	return m.store.ForEach(baselineBucket, func(key, value []byte) error {
+		var baseline Baseline
+		if err := json.Unmarshal(value, &baseline); err != nil {
+			return nil
+		}
+		if !baseline.UpdatedAt.IsZero() && baseline.UpdatedAt.Before(cutoff) {
+			return m.store.Delete(baselineBucket, string(key))
+		}
+		return nil
+	})
 }
 
 func (m *Manager) get(scannerName, metric string) (*Baseline, error) {

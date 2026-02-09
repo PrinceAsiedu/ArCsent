@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ipsix/arcsent/internal/config"
 	"github.com/ipsix/arcsent/internal/logging"
 	"github.com/ipsix/arcsent/internal/scanner"
 )
@@ -26,22 +27,48 @@ type Channel interface {
 }
 
 type Engine struct {
-	logger   *logging.Logger
-	channels []Channel
-	throttle time.Duration
-	mu       sync.Mutex
-	lastSeen map[string]time.Time
+	logger       *logging.Logger
+	channels     []Channel
+	throttle     time.Duration
+	retryMax     int
+	retryBackoff time.Duration
+	enabled      bool
+	mu           sync.Mutex
+	lastSeen     map[string]time.Time
+	queue        chan Alert
+	stop         chan struct{}
 }
 
-func New(logger *logging.Logger, throttle time.Duration) *Engine {
-	if throttle <= 0 {
-		throttle = 5 * time.Minute
+func New(logger *logging.Logger, cfg config.AlertingConfig) *Engine {
+	throttle := 5 * time.Minute
+	if cfg.DedupWindow != "" {
+		if parsed, err := time.ParseDuration(cfg.DedupWindow); err == nil {
+			throttle = parsed
+		}
 	}
-	return &Engine{
-		logger:   logger,
-		throttle: throttle,
-		lastSeen: make(map[string]time.Time),
+	backoff := 2 * time.Second
+	if cfg.RetryBackoff != "" {
+		if parsed, err := time.ParseDuration(cfg.RetryBackoff); err == nil {
+			backoff = parsed
+		}
 	}
+	if cfg.RetryMax < 0 {
+		cfg.RetryMax = 0
+	}
+	engine := &Engine{
+		logger:       logger,
+		throttle:     throttle,
+		retryMax:     cfg.RetryMax,
+		retryBackoff: backoff,
+		enabled:      cfg.Enabled,
+		lastSeen:     make(map[string]time.Time),
+		queue:        make(chan Alert, 256),
+		stop:         make(chan struct{}),
+	}
+	if cfg.Enabled {
+		go engine.worker()
+	}
+	return engine
 }
 
 func (e *Engine) Register(channel Channel) {
@@ -49,6 +76,9 @@ func (e *Engine) Register(channel Channel) {
 }
 
 func (e *Engine) Send(alert Alert) {
+	if !e.enabled {
+		return
+	}
 	if alert.ID == "" {
 		alert.ID = fingerprint(alert)
 	}
@@ -61,13 +91,10 @@ func (e *Engine) Send(alert Alert) {
 		return
 	}
 
-	for _, ch := range e.channels {
-		if err := ch.Send(alert); err != nil {
-			e.logger.Error("alert delivery failed",
-				logging.Field{Key: "channel", Value: ch.Name()},
-				logging.Field{Key: "error", Value: err.Error()},
-			)
-		}
+	select {
+	case e.queue <- alert:
+	default:
+		e.logger.Warn("alert queue full, dropping", logging.Field{Key: "alert_id", Value: alert.ID})
 	}
 }
 
@@ -80,6 +107,36 @@ func (e *Engine) isThrottled(id string) bool {
 	}
 	e.lastSeen[id] = time.Now()
 	return false
+}
+
+func (e *Engine) worker() {
+	for {
+		select {
+		case alert := <-e.queue:
+			e.deliver(alert)
+		case <-e.stop:
+			return
+		}
+	}
+}
+
+func (e *Engine) deliver(alert Alert) {
+	for _, ch := range e.channels {
+		var err error
+		for attempt := 0; attempt <= e.retryMax; attempt++ {
+			err = ch.Send(alert)
+			if err == nil {
+				break
+			}
+			time.Sleep(e.retryBackoff * time.Duration(1<<attempt))
+		}
+		if err != nil {
+			e.logger.Error("alert delivery failed",
+				logging.Field{Key: "channel", Value: ch.Name()},
+				logging.Field{Key: "error", Value: err.Error()},
+			)
+		}
+	}
 }
 
 func fingerprint(alert Alert) string {

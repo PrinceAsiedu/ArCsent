@@ -28,10 +28,13 @@ ArCsent is a **local-only, privacy-first** security monitoring daemon written in
 - Cron schedule support, retry/backoff, and persistent job state.
 - System plugins: disk usage, file integrity, process monitoring, auth log monitor, network listeners.
 - Baseline and anomaly detection.
+- Rule engine, drift detection, and correlation across scanners.
 - Alerting (log channel).
+- Alerting with dedup + retries, channels (log, webhook, syslog, email).
 - Local API with token auth.
 - Local web UI with token auth.
 - BadgerDB local storage.
+- Optional storage encryption, retention pruning, and export endpoints.
 
 ## Documentation
 
@@ -70,6 +73,36 @@ Enable API + Web UI in `configs/config.json`:
 
 Visit `http://127.0.0.1:8787` and enter your token.
 
+Verify endpoints:
+- API health: `curl -H "Authorization: <token>" http://127.0.0.1:8788/health`
+- Metrics: `curl -H "Authorization: <token>" http://127.0.0.1:8788/metrics`
+
+## CLI (Ops)
+
+Use the built-in CLI against the local API:
+
+```bash
+ARCSENT_TOKEN=your-token ./arcsent ctl status
+ARCSENT_TOKEN=your-token ./arcsent ctl scanners
+ARCSENT_TOKEN=your-token ./arcsent ctl trigger system.disk_usage
+ARCSENT_TOKEN=your-token ./arcsent ctl signatures status
+ARCSENT_TOKEN=your-token ./arcsent ctl signatures update
+ARCSENT_TOKEN=your-token ./arcsent ctl export results -format csv
+ARCSENT_TOKEN=your-token ./arcsent ctl metrics
+```
+
+Pretty-print JSON output:
+
+```bash
+ARCSENT_TOKEN=your-token ./arcsent ctl status -pretty
+```
+
+Bash completion (optional):
+
+```bash
+source scripts/arcsent_ctl_completion.bash
+```
+
 ## Configuration
 
 Config is JSON and validated at startup.
@@ -77,14 +110,38 @@ Config is JSON and validated at startup.
 **Highlights**
 - `signatures.enabled` defaults to `false` (opt-in only).
 - `signatures.update_interval` uses Go duration strings (e.g. `24h`).
+- `signatures.source_urls` lets you override or add per-source URLs (see below).
 - `web_ui.enabled` defaults to `false`; when enabled, `web_ui.auth_token` is required.
 - `api.enabled` defaults to `false`; when enabled, `api.auth_token` is required.
+- Config reload is supported via `SIGHUP` (see Runbook).
 - `daemon.user` and `daemon.group` may be numeric IDs or names when running as root.
 - `daemon.drop_privileges` defaults to `false` (run as root). Set `true` to drop to `daemon.user`/`daemon.group`.
 - Scheduler accepts `@every <duration>`, raw duration, or 5-field cron expressions.
-- Scheduler accepts duration or cron expressions (5-field).
 - Retry/backoff: `max_retries`, `retry_backoff`, `retry_max`.
+- Detection supports rules, drift detection, and correlation windows.
+- Alerting supports dedup window and retries, plus optional channels.
 - Storage path expects a BadgerDB directory (default: `/var/lib/arcsent/badger`).
+- Storage retention: `storage.retention_days` (prunes old results/baselines).
+- Storage encryption: `storage.encryption_key_base64` (32-byte base64 key).
+
+**Signatures & Feeds**
+
+Arcsent can periodically download public TTP and vulnerability feeds into the local cache. This is **opt-in only** and runs on the configured interval (default: daily).
+
+Built-in sources:
+- `mitre_attack` (TTPs)
+- `nvd`
+- `osv`
+- `cisa_kev`
+- `exploit_db`
+- `mitre_capec` (optional)
+- `mitre_cwe` (optional)
+- `epss` (optional)
+- `ghsa` (optional)
+
+Notes:
+- Some optional sources require you to provide `signatures.source_urls` with a mirror URL.
+- If `signatures.airgap_import_path` is set, Arcsent will **import from that path** and skip network downloads.
 
 **Scanners**
 
@@ -111,6 +168,25 @@ Additional plugins you can enable:
 
 - `system.auth_log` (parses recent auth log lines for failed logins)
 - `system.network_listeners` (counts listening TCP/UDP sockets)
+- `system.cpu_memory` (CPU, memory, and swap utilization snapshot)
+- `system.load_avg` (load averages and runnable threads)
+- `system.uptime` (uptime and idle seconds)
+
+**Detection Rules**
+
+Define rules under `detection.rules` to trigger findings from metrics:
+
+```json
+{
+  "name": "disk-high",
+  "scanner": "system.disk_usage",
+  "metric": "used_pct",
+  "operator": "gte",
+  "threshold": 90,
+  "severity": "high",
+  "description": "Disk usage exceeded 90%"
+}
+```
 
 ## Example Full Config
 
@@ -124,14 +200,19 @@ Additional plugins you can enable:
     "shutdown_timeout": "10s"
   },
   "storage": {
-    "db_path": "/var/lib/arcsent/badger"
+    "db_path": "/var/lib/arcsent/badger",
+    "retention_days": 30,
+    "encryption_key_base64": ""
   },
   "signatures": {
     "enabled": false,
     "update_interval": "24h",
     "sources": ["mitre_attack", "nvd", "osv", "cisa_kev", "exploit_db"],
     "cache_dir": "/var/lib/arcsent/signatures",
-    "airgap_import_path": ""
+    "airgap_import_path": "",
+    "source_urls": {
+      "osv": "https://example.com/mirrors/osv.zip"
+    }
   },
   "api": {
     "enabled": true,
@@ -176,6 +257,11 @@ All endpoints require the token.
 - `GET /results/history`
 - `GET /findings`
 - `GET /baselines`
+- `GET /export/results` (JSON or CSV via `?format=csv`)
+- `GET /export/baselines` (JSON or CSV via `?format=csv`)
+- `GET /signatures/status`
+- `POST /signatures/update`
+- `GET /metrics` (Prometheus text format)
 
 Same endpoints are available under `/api/*`.
 
