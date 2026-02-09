@@ -32,6 +32,7 @@ type DaemonConfig struct {
 	User            string `json:"user"`
 	Group           string `json:"group"`
 	ShutdownTimeout string `json:"shutdown_timeout"`
+	DropPrivileges  bool   `json:"drop_privileges"`
 }
 
 type StorageConfig struct {
@@ -79,6 +80,7 @@ func Default() Config {
 			User:            "",
 			Group:           "",
 			ShutdownTimeout: "10s",
+			DropPrivileges:  false,
 		},
 		Storage: StorageConfig{
 			DBPath: "/var/lib/arcsent/badger",
@@ -146,6 +148,13 @@ func (c Config) Validate() error {
 	if c.Daemon.ShutdownTimeout != "" {
 		if _, err := time.ParseDuration(c.Daemon.ShutdownTimeout); err != nil {
 			errs = append(errs, "daemon.shutdown_timeout must be a valid duration (e.g. 10s)")
+		}
+	}
+	if c.Daemon.DropPrivileges {
+		if os.Geteuid() == 0 {
+			if c.Daemon.User == "" || c.Daemon.Group == "" {
+				errs = append(errs, "daemon.user and daemon.group are required when drop_privileges is true")
+			}
 		}
 	}
 

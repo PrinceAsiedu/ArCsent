@@ -79,6 +79,7 @@ Config is JSON and validated at startup.
 - `web_ui.enabled` defaults to `false`; when enabled, `web_ui.auth_token` is required.
 - `api.enabled` defaults to `false`; when enabled, `api.auth_token` is required.
 - `daemon.user` and `daemon.group` may be numeric IDs or names when running as root.
+- `daemon.drop_privileges` defaults to `false` (run as root). Set `true` to drop to `daemon.user`/`daemon.group`.
 - Scheduler accepts `@every <duration>` or raw duration strings (cron support later).
 - Storage path expects a BadgerDB directory (default: `/var/lib/arcsent/badger`).
 
@@ -178,6 +179,7 @@ Same endpoints are available under `/api/*`.
 ## Web UI
 
 The UI is embedded and served locally. It calls the local API via `/api/*` and requires the same token.
+The landing page is public; API calls remain token-protected.
 
 ## Tooling
 
@@ -202,6 +204,14 @@ golangci-lint run ./...
 - API/UI not reachable: confirm `bind_addr` and token.
 - No scan results: ensure scanners are enabled and scheduled.
 - Storage errors: verify `/var/lib/arcsent/badger` permissions.
+
+## Smoke Test
+
+Run a basic local smoke test:
+
+```bash
+ARCSENT_TOKEN=your-token scripts/smoke_test.sh
+```
 
 ## Roadmap
 

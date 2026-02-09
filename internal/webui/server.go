@@ -77,9 +77,9 @@ func (s *Server) buildHandler() (http.Handler, error) {
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/api/", s.withAuthHandler(s.proxyAPI()))
-	mux.Handle("/", s.withAuthHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.FileServer(http.FS(sub)).ServeHTTP(w, r)
-	})))
+	}))
 	return mux, nil
 }
 

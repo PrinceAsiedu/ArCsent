@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -111,8 +112,9 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) handleStatus(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{
-		"status": "running",
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"status":          "running",
+		"running_as_root": os.Geteuid() == 0,
 	})
 }
 

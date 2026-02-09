@@ -33,12 +33,15 @@ func New(cfg config.Config, logger *logging.Logger) *Runner {
 }
 
 func (r *Runner) Run(ctx context.Context) error {
-	if err := RequirePrivilegeDrop(r.cfg.Daemon.User, r.cfg.Daemon.Group); err != nil {
-		return err
-	}
-
-	if err := DropPrivileges(r.cfg.Daemon.User, r.cfg.Daemon.Group); err != nil {
-		return err
+	if r.cfg.Daemon.DropPrivileges {
+		if err := RequirePrivilegeDrop(r.cfg.Daemon.User, r.cfg.Daemon.Group); err != nil {
+			return err
+		}
+		if err := DropPrivileges(r.cfg.Daemon.User, r.cfg.Daemon.Group); err != nil {
+			return err
+		}
+	} else {
+		r.logger.Warn("running without privilege drop")
 	}
 
 	ctx, cancel := context.WithCancel(ctx)

@@ -4,7 +4,8 @@
     "log_format": "json",
     "user": "",
     "group": "",
-    "shutdown_timeout": "10s"
+    "shutdown_timeout": "10s",
+    "drop_privileges": false
   },
   "storage": {
     "db_path": "/var/lib/arcsent/badger"

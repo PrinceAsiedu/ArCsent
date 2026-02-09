@@ -200,6 +200,14 @@
         This console runs locally and uses your auth token to access the daemon API.
         Set the token below to view system status.
       </div>
+      <div id="root-warning" class="card" style="border-color: rgba(164,31,31,0.4); display: none;">
+        <div class="label">Warning</div>
+        <div class="value">Running as root</div>
+        <div class="status-line">
+          The daemon is running with elevated privileges. Consider enabling
+          <code>daemon.drop_privileges</code> if not required.
+        </div>
+      </div>
       <div class="card">
         <div class="label">API Token</div>
         <input id="token" class="input" type="password" placeholder="Paste your token" />
@@ -274,6 +282,7 @@
       const scannerSelect = document.getElementById("scanner-select");
       const findingsTable = document.querySelector("#findings-table tbody");
       const baselinesTable = document.querySelector("#baselines-table tbody");
+      const rootWarning = document.getElementById("root-warning");
 
       function saveToken() {
         const value = tokenInput.value.trim();
@@ -317,9 +326,23 @@
           await loadLatestResults(token);
           await loadFindings(token);
           await loadBaselines(token);
+          await checkRoot(token);
         } catch (err) {
           daemonStatus.textContent = "Offline";
           daemonDetail.textContent = "Unable to reach API.";
+        }
+      }
+
+      async function checkRoot(token) {
+        const res = await fetch("/api/status", { headers: { Authorization: token } });
+        if (!res.ok) {
+          return;
+        }
+        const payload = await res.json();
+        if (payload && payload.running_as_root) {
+          rootWarning.style.display = "block";
+        } else {
+          rootWarning.style.display = "none";
         }
       }
 

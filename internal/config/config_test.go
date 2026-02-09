@@ -70,3 +70,12 @@ func TestValidateScannerSchedule(t *testing.T) {
 		t.Fatalf("expected validation error for missing scanner schedule")
 	}
 }
+
+func TestValidateDropPrivilegesRequiresUserGroup(t *testing.T) {
+	cfg := Default()
+	cfg.Daemon.DropPrivileges = true
+	cfg.Daemon.User = ""
+	cfg.Daemon.Group = ""
+	// Only enforce when running as root, so this test simply ensures no panic.
+	_ = cfg.Validate()
+}

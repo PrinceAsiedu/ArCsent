@@ -25,8 +25,8 @@ func TestWebUIAuth(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
-	if rr.Code != http.StatusUnauthorized {
-		t.Fatalf("expected unauthorized without token, got %d", rr.Code)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected ok without token for UI landing, got %d", rr.Code)
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
@@ -35,5 +35,12 @@ func TestWebUIAuth(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected ok with token, got %d", rr.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected unauthorized for api without token, got %d", rr.Code)
 	}
 }
